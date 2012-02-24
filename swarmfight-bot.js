@@ -1,3 +1,6 @@
+/**
+ * Usage swarmfight-bot.js --url http://servername/path/to/swarmfight/ --user_id 1h2g3j2h13g --color red --number 2
+ */
 var http = require('http');
 var querystring = require('querystring');
 var url_service = require("url");
@@ -8,6 +11,7 @@ SwarmFightBot = function(options)
     options.host = options.host || url_parts.host;
     options.path = options.path || url_parts.path;
     options.port = parseInt(options.port || url_parts.port || (options.protocol === 'https' ? 443 : 80), 10);
+    options.number = parseInt(options.number, 10);
     
     console.log(options);
     var that = this;
@@ -199,10 +203,37 @@ SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
     req.end();
 };
 
-new SwarmFightBot({
-    'url': process.argv[2],
-    'api_key': '123',
-    'user_id': process.argv[3],
-    'color': process.argv[4],
-    'number': parseInt(process.argv[5], 10)
-}).run();
+var parseCommandLineOptions = function() {
+    var filenames = [];
+    var options = {};
+    var next_is_option = false;
+    var next_option_key = null;
+    var everything_is_file = false;
+
+    for (var i = 2; i < process.argv.length; i++) {
+        var parameter = process.argv[i];
+        if (!everything_is_file) {
+            if (next_is_option) {
+                options[next_option_key] = parameter;
+                next_is_option = false;
+            } else {
+                if (parameter === '--') {
+                    everything_is_file = true;
+                } else {
+                    if (parameter.substr(0, 2) === '--') {
+                        next_is_option = true;
+                        next_option_key = parameter.substr(2);
+                    } else {
+                        filenames.push(parameter);
+                    }
+                }
+            }
+        } else {
+            filenames.push(parameter);
+        }
+    }
+
+    return options;
+};
+
+new SwarmFightBot(parseCommandLineOptions()).run();
