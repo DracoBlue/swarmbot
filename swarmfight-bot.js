@@ -1,8 +1,14 @@
 var http = require('http');
 var querystring = require('querystring');
+var url_service = require("url");
 
 SwarmFightBot = function(options)
 {
+    var url_parts = url_service.parse(options.url);
+    options.host = options.host || url_parts.host;
+    options.path = options.path || url_parts.path;
+    options.port = parseInt(options.port || url_parts.port || (options.protocol === 'https' ? 443 : 80), 10);
+    
     console.log(options);
     var that = this;
     this.options = options || {};
@@ -194,11 +200,9 @@ SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
 };
 
 new SwarmFightBot({
-    'host': 'workspaces.local',
-    'path': '/puzzle/www/',
-    'port': '80',
+    'url': process.argv[2],
     'api_key': '123',
-    'user_id': process.argv[2],
-    'color': process.argv[3],
-    'number': parseInt(process.argv[4], 10)
+    'user_id': process.argv[3],
+    'color': process.argv[4],
+    'number': parseInt(process.argv[5], 10)
 }).run();
