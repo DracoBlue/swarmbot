@@ -87,6 +87,7 @@ SwarmFightBot.prototype.onTick = function(cb)
     
     var user_x = null;
     var user_y = null;
+    var user_color = null;
 
     for ( var i = 0; i < participants.length; i++)
     {
@@ -94,6 +95,7 @@ SwarmFightBot.prototype.onTick = function(cb)
         {
             user_x = participants[i].x;
             user_y = participants[i].y;
+            user_color = participants[i].color;
         }
         if (participants[i].color != 'G')
         {
