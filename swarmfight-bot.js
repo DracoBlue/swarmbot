@@ -68,6 +68,37 @@ SwarmFightBot.prototype.joinAnyField = function()
     });
 };
 
+SwarmFightBot.prototype.getAimSize = function()
+{
+    if (!this.aim)
+    {
+        throw new Error('Cannot retrieve aim, if the aim-data has not been set, yet!');
+    }
+    
+    var aim = this.aim;
+    
+    var aim_min_x = aim[0].x;
+    var aim_max_x = aim[0].x;
+    var aim_min_y = aim[0].y;
+    var aim_max_y = aim[0].y;
+
+    for ( var i = 1; i < aim.length; i++)
+    {
+        aim_min_x = Math.min(aim_min_x, aim[i].x);
+        aim_max_x = Math.max(aim_max_x, aim[i].x);
+        aim_min_y = Math.min(aim_min_y, aim[i].y);
+        aim_max_y = Math.max(aim_max_y, aim[i].y);
+    }
+    
+    var aim_width = aim_max_x - aim_min_x;
+    var aim_height = aim_max_y - aim_min_y;
+    
+    return {
+        'width': aim_width,
+        'height': aim_height
+    };
+};
+
 SwarmFightBot.prototype.onTick = function(cb)
 {
     var that = this;
@@ -88,7 +119,7 @@ SwarmFightBot.prototype.onTick = function(cb)
     var user_x = null;
     var user_y = null;
     var user_color = null;
-
+    
     for ( var i = 0; i < participants.length; i++)
     {
         if (participants[i].user_id === that.options.user_id)
@@ -101,6 +132,25 @@ SwarmFightBot.prototype.onTick = function(cb)
         {
             field_colors[participants[i].x + 'x' + participants[i].y] = participants[i].color;
         }
+    }
+
+    if (user_color == 'R')
+    {
+        var aim_size = this.getAimSize();
+        /*
+         * Downer right corner
+         */
+        left_padding = 16 - aim_size.width - 1;
+        top_padding = 16 - aim_size.height - 1;
+    }
+    
+    if (user_color == 'B')
+    {
+        /*
+         * Upper left corner
+         */
+        left_padding = 1;
+        top_padding = 1;
     }
     
     console.log(field_colors);
