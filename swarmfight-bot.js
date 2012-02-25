@@ -278,7 +278,9 @@ SwarmFightBot.prototype.updateFieldData = function(cb)
             that.field_id = null;
             that.aim = null;
             that.participants = null;
-            that.joinAnyField();
+            setTimeout(function() {
+                that.joinAnyField();
+            }, 3000 + Math.floor(Math.random() * 5000));
         }
         else
         {
