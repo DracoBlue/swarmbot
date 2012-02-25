@@ -20,6 +20,7 @@ SwarmFightBot = function(options)
     this.cookies = null;
     this.is_logged_in = false;
     
+    this.user_id = null;
     this.field_id = null;
     this.aim = null;
     this.participants = null;
@@ -39,8 +40,9 @@ SwarmFightBot.prototype.run = function()
 {
     var that = this;
 
-    this.rawExecute('login_as_user_id.php?user_id=' + this.options.user_id, {}, function(data, res)
+    this.rawExecute('login_with_api_key.php', {"api_key": this.options.api_key}, function(raw_data, res)
     {
+        var data = JSON.parse(raw_data);
         var headers = res.headers;
         /*
          * done
@@ -49,7 +51,9 @@ SwarmFightBot.prototype.run = function()
         {
             that.cookies = headers['set-cookie'].join('').split(';')[0];
         }
-
+        
+        that.user_id = data.user_id;
+        
         that.joinAnyField();
     });
 };
@@ -142,7 +146,7 @@ SwarmFightBot.prototype.getUserPosition = function()
     
     for ( var i = 0; i < participants.length; i++)
     {
-        if (participants[i].user_id === that.options.user_id)
+        if (participants[i].user_id === that.user_id)
         {
             return {
                 'x': participants[i].x,
@@ -360,4 +364,19 @@ var parseCommandLineOptions = function() {
     return options;
 };
 
-new SwarmFightBot(parseCommandLineOptions()).run();
+var commandline_options = parseCommandLineOptions();
+
+var api_keys = commandline_options['api-keys'].split(',');
+
+api_keys.forEach(function(api_key, i)
+{
+    setTimeout(function() {
+        new SwarmFightBot({
+            "url": commandline_options.url,
+            "color": commandline_options.color,
+            "number": i + 1,
+            "api_key": api_key
+        }).run();
+    }, i * 100);
+});
+
