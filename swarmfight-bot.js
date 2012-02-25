@@ -68,7 +68,7 @@ SwarmFightBot.prototype.joinAnyField = function()
     });
 };
 
-SwarmFightBot.prototype.getAimSize = function()
+SwarmFightBot.prototype.getAimDimensions = function()
 {
     if (!this.aim)
     {
@@ -94,8 +94,117 @@ SwarmFightBot.prototype.getAimSize = function()
     var aim_height = aim_max_y - aim_min_y;
     
     return {
+        'left': aim_min_x,
+        'top': aim_min_y,
         'width': aim_width,
         'height': aim_height
+    };
+};
+
+SwarmFightBot.prototype.isPositionOccupied = function(position)
+{
+    if (!this.participants)
+    {
+        throw new Error('Cannot calculate if the position is occupied, if we don\'t have any participants data, yet');
+    }
+    
+    var participants = this.participants;
+    
+    for ( var i = 0; i < participants.length; i++)
+    {
+        if (participants[i].x === position.x && participants[i].y === position.y)
+        {
+            if (participants[i].color == 'G')
+            {
+                /*
+                 * It's an item, which you can pickup: is not occupied, though.
+                 */
+                return false;
+            }
+            
+            return true;
+        }
+    }    
+    
+    return false;
+};
+
+SwarmFightBot.prototype.getUserPosition = function()
+{
+    var that = this;
+    
+    if (!this.participants)
+    {
+        throw new Error('Cannot calculate the position of the player, if we don\'t have any participants data, yet');
+    }
+    
+    var participants = this.participants;
+    
+    for ( var i = 0; i < participants.length; i++)
+    {
+        if (participants[i].user_id === that.options.user_id)
+        {
+            return {
+                'x': participants[i].x,
+                'y': participants[i].y,
+                'color': participants[i].color
+            };
+        }
+    }    
+    
+    throw new Error('Cannot find user on field!');
+};
+
+SwarmFightBot.prototype.getUserTargetPosition = function()
+{
+    if (!this.aim)
+    {
+        throw new Error('Cannot calculate the target position of the player, if we don\'t have any aim, yet');
+    }
+    
+    var user_position = this.getUserPosition();
+    
+    var left_padding = 1;
+    var top_padding = 1;
+    
+    
+    if (user_position.color == 'R')
+    {
+        var aim_dimension = this.getAimDimensions();
+        /*
+         * Downer right corner
+         */
+        left_padding = 16 - aim_dimension.left - aim_dimension.width - 1;
+        top_padding = 16 - aim_dimension.top - aim_dimension.height - 1;
+        console.log('left, top', left_padding, top_padding, user_position, aim_dimension);
+    }
+    
+    if (user_position.color == 'B')
+    {
+        /*
+         * Upper left corner
+         */
+        left_padding = 1;
+        top_padding = 1;
+        console.log('left, top', left_padding, top_padding, user_position);
+    }
+    
+    var position_in_aim = this.options.number - 1;
+    
+    if (this.aim.length <= position_in_aim)
+    {
+        /*
+         * Aim is not big enough, so let's stay where we are
+         */
+        return {
+            "x": user_position.x,
+            "y": user_position.y
+        };
+    }
+    
+    return {
+        "x": this.aim[position_in_aim].x + left_padding,
+        "y": this.aim[position_in_aim].y + top_padding
     };
 };
 
@@ -111,82 +220,38 @@ SwarmFightBot.prototype.onTick = function(cb)
     var participants = this.participants;
     var aim = this.aim;
     
-    var left_padding = 1;
-    var top_padding = 1;
-
-    var field_colors = {};
+    var user_position = this.getUserPosition();
+    var target_position = this.getUserTargetPosition();
     
-    var user_x = null;
-    var user_y = null;
-    var user_color = null;
-    
-    for ( var i = 0; i < participants.length; i++)
+    if (this.isPositionOccupied(target_position))
     {
-        if (participants[i].user_id === that.options.user_id)
-        {
-            user_x = participants[i].x;
-            user_y = participants[i].y;
-            user_color = participants[i].color;
-        }
-        if (participants[i].color != 'G')
-        {
-            field_colors[participants[i].x + 'x' + participants[i].y] = participants[i].color;
-        }
+        cb();
+        return ;
+    }
+    
+    var params = {};
+    
+    if (user_position.x != target_position.x)
+    {
+        params['x'] = target_position.x < user_position.x ? -1 : 1;
+        params['y'] = 0;
+    }
+    else if (user_position.y != target_position.y)
+    {
+        params['x'] = 0;
+        params['y'] = target_position.y < user_position.y ? -1 : 1;
+    }
+    else
+    {
+        cb();
+        return ;
     }
 
-    if (user_color == 'R')
+    console.log('moving from ', user_position.x, user_position.y, 'to', target_position.x, target_position.y);
+    that.rawExecute('move_player.php', params, function()
     {
-        var aim_size = this.getAimSize();
-        /*
-         * Downer right corner
-         */
-        left_padding = 16 - aim_size.width - 1;
-        top_padding = 16 - aim_size.height - 1;
-    }
-    
-    if (user_color == 'B')
-    {
-        /*
-         * Upper left corner
-         */
-        left_padding = 1;
-        top_padding = 1;
-    }
-    
-    console.log(field_colors);
-
-    for ( var i = 0; i < aim.length; i++)
-    {
-        if (i === that.options.number)
-        {
-            var aim_x = aim[i].x + left_padding;
-            var aim_y = aim[i].y + top_padding;
-            if (typeof field_colors[aim_x + 'x' + aim_y] === 'undefined')
-            {
-                var params = {};
-                if (aim_x != user_x) {
-                    params['x'] = aim_x < user_x ? -1 : 1;
-                    params['y'] = 0;
-                } else if (aim_y != user_y){
-                    params['x'] = 0;
-                    params['y'] = aim_y < user_y ? -1 : 1;
-                } else {
-                    cb();
-                    return ;
-                }
-                
-                console.log('moving from ', user_x, user_y, 'to', aim_x, aim_y);
-                
-                that.rawExecute('move_player.php', params, function()
-                {
-                    cb();
-                });
-                return ;
-            }
-        }
-    }
-    
-    cb();
+        cb();
+    });
 };
 
 SwarmFightBot.prototype.updateFieldData = function(cb)
