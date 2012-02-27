@@ -1,5 +1,7 @@
 /**
  * Usage swarmfight-bot.js --url http://servername/path/to/swarmfight/ --user_id 1h2g3j2h13g --color red --number 2
+ * 
+ * Copyright 2012 by DracoBlue. Licensed under the terms of MIT License.
  */
 var http = require('http');
 var querystring = require('querystring');
@@ -13,7 +15,6 @@ SwarmFightBot = function(options)
     options.port = parseInt(options.port || url_parts.port || (options.protocol === 'https' ? 443 : 80), 10);
     options.number = parseInt(options.number, 10);
     
-    console.log(options);
     var that = this;
     this.options = options || {};
 
@@ -67,7 +68,6 @@ SwarmFightBot.prototype.joinAnyField = function()
     {
         var data = JSON.parse(raw_data);
         that.field_id = data.id;
-        console.log('joined', that.field_id);
         that.is_logged_in = true;
     });
 };
@@ -180,7 +180,6 @@ SwarmFightBot.prototype.getUserTargetPosition = function()
          */
         left_padding = 16 - aim_dimension.left - aim_dimension.width - 1;
         top_padding = 16 - aim_dimension.top - aim_dimension.height - 1;
-        console.log('left, top', left_padding, top_padding, user_position, aim_dimension);
     }
     
     if (user_position.color == 'B')
@@ -190,7 +189,6 @@ SwarmFightBot.prototype.getUserTargetPosition = function()
          */
         left_padding = 1;
         top_padding = 1;
-        console.log('left, top', left_padding, top_padding, user_position);
     }
     
     var position_in_aim = this.options.number - 1;
@@ -212,6 +210,26 @@ SwarmFightBot.prototype.getUserTargetPosition = function()
     };
 };
 
+SwarmFightBot.prototype.areWeOnlyBots = function()
+{
+    if (!this.participants)
+    {
+        throw new Error('Cannot calculate the position of the player, if we don\'t have any participants data, yet');
+    }
+    
+    var participants = this.participants;
+    
+    for ( var i = 0; i < participants.length; i++)
+    {
+        if (participants[i].user_id && !participants[i].is_bot)
+        {
+            return false;
+        }
+    }    
+    
+    return true;
+};
+
 SwarmFightBot.prototype.onTick = function(cb)
 {
     var that = this;
@@ -223,6 +241,12 @@ SwarmFightBot.prototype.onTick = function(cb)
     
     var participants = this.participants;
     var aim = this.aim;
+    
+    if (this.areWeOnlyBots())
+    {
+        cb();
+        return ;
+    }
     
     var user_position = this.getUserPosition();
     var target_position = this.getUserTargetPosition();
@@ -251,7 +275,6 @@ SwarmFightBot.prototype.onTick = function(cb)
         return ;
     }
 
-    console.log('moving from ', user_position.x, user_position.y, 'to', target_position.x, target_position.y);
     that.rawExecute('move_player.php', params, function()
     {
         cb();
@@ -270,8 +293,6 @@ SwarmFightBot.prototype.updateFieldData = function(cb)
     this.rawExecute('field_data.php?field_id=' + this.field_id, {}, function(raw_data)
     {
         var data = JSON.parse(raw_data);
-
-        // console.log('field_data', raw_data);
 
         if (data.winners)
         {
@@ -324,8 +345,6 @@ SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
 
         res.on('end', function()
         {
-            // console.log('STATUS: ' + res.statusCode);
-            // console.log('BODY: ' + response.join(''));
             cb(response.join(''), res);
         });
     });
