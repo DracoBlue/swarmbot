@@ -306,7 +306,7 @@ SwarmFightBot.prototype.updateFieldData = function(cb)
         return;
     }
 
-    this.rawExecute('field_data.php?field_id=' + this.field_id, {}, function(raw_data)
+    this.rawExecuteGet('field_data.php?field_id=' + this.field_id, {}, function(raw_data)
     {
         var data = JSON.parse(raw_data);
 
@@ -329,7 +329,7 @@ SwarmFightBot.prototype.updateFieldData = function(cb)
     });
 };
 
-SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
+SwarmFightBot.prototype.rawExecuteMethod = function(method, function_name, params, cb)
 {
     var that = this;
     var raw_body = querystring.stringify(params);
@@ -342,7 +342,7 @@ SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
             'Content-Length': raw_body.length,
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        "method": "POST"
+        "method": method
     };
 
     if (this.cookies)
@@ -366,6 +366,21 @@ SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
     });
     req.write(raw_body);
     req.end();
+};
+
+SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
+{
+    this.rawExecuteMethod('POST', function_name, params, cb);
+};
+
+SwarmFightBot.prototype.rawExecuteGet = function(function_name, params, cb)
+{
+    this.rawExecuteMethod('GET', function_name, params, cb);
+};
+
+SwarmFightBot.prototype.rawExecutePost = function(function_name, params, cb)
+{
+    this.rawExecuteMethod('POST', function_name, params, cb);
 };
 
 var parseCommandLineOptions = function() {
