@@ -248,8 +248,24 @@ SwarmFightBot.prototype.onTick = function(cb)
         return ;
     }
     
-    var user_position = this.getUserPosition();
-    var target_position = this.getUserTargetPosition();
+    try
+    {
+        var user_position = this.getUserPosition();
+        var target_position = this.getUserTargetPosition();
+    }
+    catch (error)
+    {
+        /*
+         * Looks like we got kicked form the field, let's rejoin!
+         */
+        that.field_id = null;
+        that.aim = null;
+        that.participants = null;
+        that.joinAnyField();
+        cb();
+        return ;
+    }
+    
     
     if (this.isPositionOccupied(target_position))
     {
