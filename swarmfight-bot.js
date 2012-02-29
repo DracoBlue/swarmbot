@@ -3,16 +3,87 @@
  * 
  * Copyright 2012 by DracoBlue. Licensed under the terms of MIT License.
  */
-var http = require('http');
-var querystring = require('querystring');
-var url_service = require("url");
+HttpClient = function(options)
+{
+    this.options = options;
+    this.options.base_url = this.options.base_url || null;
+    this.cookies = null;
+    
+    this.initializeNodeJsRequests();
+};
+
+HttpClient.prototype.initializeNodeJsRequests = function()
+{
+    this.http_module = require('http');
+    this.querystring_module = require('querystring');
+    this.url_module = require('url');
+    
+    this.rawRequest = this.rawNodeJsRequest;
+};
+
+HttpClient.prototype.rawNodeJsRequest = function(method, url, params, cb)
+{
+    var that = this;
+    var raw_body = this.querystring_module.stringify(params);
+
+    var url_parts = this.url_module.parse((this.options.base_url || '') + url);
+    
+    var options = {
+        "host": url_parts.host,
+        "port": parseInt(url_parts.port || (url_parts.protocol === 'https' ? 443 : 80), 10),
+        "path": url_parts.path,
+        "headers": {
+            'Content-Length': raw_body.length,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        "method": method
+    };
+
+    if (this.cookies)
+    {
+        options.headers['Cookie'] = that.cookies;
+    }
+
+    var req = this.http_module.request(options, function(res)
+    {
+        res.setEncoding('utf8');
+        var response = [];
+        res.on('data', function(chunk)
+        {
+            response.push(chunk);
+        });
+
+        res.on('end', function()
+        {
+            var headers = res.headers;
+            if (headers['set-cookie'])
+            {
+                that.cookies = headers['set-cookie'].join('').split(';')[0];
+            }
+            
+            cb(response.join(''));
+        });
+    });
+    req.write(raw_body);
+    req.end();    
+};
+
+HttpClient.prototype.get = function(url, params, cb)
+{
+    this.rawRequest('GET', url, params, cb);
+};
+
+HttpClient.prototype.post = function(url, params, cb)
+{
+    this.rawRequest('POST', url, params, cb);
+};
 
 SwarmFightBot = function(options)
 {
-    var url_parts = url_service.parse(options.url);
-    options.host = options.host || url_parts.host;
-    options.path = options.path || url_parts.path;
-    options.port = parseInt(options.port || url_parts.port || (options.protocol === 'https' ? 443 : 80), 10);
+    this.client = new HttpClient({
+        "base_url": options.url
+    });
+    
     options.number = parseInt(options.number, 10);
     
     var that = this;
@@ -41,17 +112,9 @@ SwarmFightBot.prototype.run = function()
 {
     var that = this;
 
-    this.rawExecute('login_with_api_key.php', {"api_key": this.options.api_key}, function(raw_data, res)
+    this.client.post('login_with_api_key.php', {"api_key": this.options.api_key}, function(raw_data, res)
     {
         var data = JSON.parse(raw_data);
-        var headers = res.headers;
-        /*
-         * done
-         */
-        if (headers['set-cookie'])
-        {
-            that.cookies = headers['set-cookie'].join('').split(';')[0];
-        }
         
         that.user_id = data.user_id;
         
@@ -62,7 +125,7 @@ SwarmFightBot.prototype.run = function()
 SwarmFightBot.prototype.joinAnyField = function()
 {
     var that = this;
-    that.rawExecute('join_any_fight.php', {
+    that.client.post('join_any_fight.php', {
         'color': that.options.color
     }, function(raw_data)
     {
@@ -291,7 +354,7 @@ SwarmFightBot.prototype.onTick = function(cb)
         return ;
     }
 
-    that.rawExecute('move_player.php', params, function()
+    that.client.post('move_player.php', params, function()
     {
         cb();
     });
@@ -306,7 +369,7 @@ SwarmFightBot.prototype.updateFieldData = function(cb)
         return;
     }
 
-    this.rawExecuteGet('field_data.php?field_id=' + this.field_id, {}, function(raw_data)
+    this.client.get('field_data.php?field_id=' + this.field_id, {}, function(raw_data)
     {
         var data = JSON.parse(raw_data);
 
@@ -327,60 +390,6 @@ SwarmFightBot.prototype.updateFieldData = function(cb)
 
         cb();
     });
-};
-
-SwarmFightBot.prototype.rawExecuteMethod = function(method, function_name, params, cb)
-{
-    var that = this;
-    var raw_body = querystring.stringify(params);
-
-    var options = {
-        "host": this.options.host,
-        "port": this.options.port,
-        "path": this.options.path + function_name,
-        "headers": {
-            'Content-Length': raw_body.length,
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        "method": method
-    };
-
-    if (this.cookies)
-    {
-        options.headers['Cookie'] = that.cookies;
-    }
-
-    var req = http.request(options, function(res)
-    {
-        res.setEncoding('utf8');
-        var response = [];
-        res.on('data', function(chunk)
-        {
-            response.push(chunk);
-        });
-
-        res.on('end', function()
-        {
-            cb(response.join(''), res);
-        });
-    });
-    req.write(raw_body);
-    req.end();
-};
-
-SwarmFightBot.prototype.rawExecute = function(function_name, params, cb)
-{
-    this.rawExecuteMethod('POST', function_name, params, cb);
-};
-
-SwarmFightBot.prototype.rawExecuteGet = function(function_name, params, cb)
-{
-    this.rawExecuteMethod('GET', function_name, params, cb);
-};
-
-SwarmFightBot.prototype.rawExecutePost = function(function_name, params, cb)
-{
-    this.rawExecuteMethod('POST', function_name, params, cb);
 };
 
 var parseCommandLineOptions = function() {
