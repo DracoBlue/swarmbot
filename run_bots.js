@@ -50,7 +50,8 @@ api_keys.forEach(function(api_key, i)
             "client": new HttpClient({"base_url": commandline_options.url}),
             "color": commandline_options.color,
             "number": i + 1,
-            "api_key": api_key
+            "api_key": api_key,
+            "debug": commandline_options.debug === '1' ? true : false
         }).run();
     }, i * 100);
 });

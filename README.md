@@ -26,6 +26,8 @@ For testing, you may use one of those api-keys (the bots are named after citys):
 # Changelog
 
 - 2012/02/29
+  - added debugging and renamed onTick into executeStrategy
+  - executeStrategy will be only called, if the bot is not disabled and the bot is still on the field
   - refactored the SwarmFightBot into SwarmFightBot and Field
   - split up into run_bots.js, SwarmFightBot.js and HttpClient.js
   - new HttpClient-class, to have a replaceable server communication class

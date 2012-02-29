@@ -138,6 +138,28 @@ Field.prototype.getUserPositionById = function(user_id)
     throw new Error('Cannot find user on field!');
 };
 
+Field.prototype.isUserOnFieldByUserId = function(user_id)
+{
+    var that = this;
+    
+    if (!this.participants)
+    {
+        throw new Error('Cannot calculate the position of the player, if we don\'t have any participants data, yet');
+    }
+    
+    var participants = this.participants;
+    
+    for ( var i = 0; i < participants.length; i++)
+    {
+        if (participants[i].user_id === user_id)
+        {
+            return true;
+        }
+    }    
+    
+    return false;
+};
+
 Field.prototype.areThereOnlyBots = function()
 {
     if (!this.participants)
@@ -160,11 +182,11 @@ Field.prototype.areThereOnlyBots = function()
 
 SwarmFightBot = function(options)
 {
+    var that = this;
     this.client = options.client;
     
     options.number = parseInt(options.number, 10);
     
-    var that = this;
     this.options = options || {};
 
     this.is_logged_in = false;
@@ -180,25 +202,45 @@ SwarmFightBot = function(options)
             
             field.refresh(that.client, function()
             {
-                if (field.hasWinners())
+                if (field.hasWinners() || !field.isUserOnFieldByUserId(that.user_id))
                 {
+                    that.logDebug('Winner or we got kicked!');
+                    /*
+                     * Looks like somebody won or we got kicked form the field, let's rejoin!
+                     */
                     that.field_id = null;
                     that.field = null;
-                    
+                   
                     setTimeout(function() {
                         that.joinAnyField();
                     }, 3000 + Math.floor(Math.random() * 5000));
                 }
                 else
                 {
-                    that.onTick(function()
+                    if (!that.isTheBotDisabled())
                     {
-                
-                    });
+                        that.logDebug('Bot is enabled');
+                        that.executeStrategy(function()
+                        {
+                    
+                        });
+                    }
+                    else
+                    {
+                        that.logDebug('Bot is disabled');
+                    }
                 }
             });
         }
     }, 1000);
+};
+
+SwarmFightBot.prototype.logDebug = function()
+{
+    if (this.options.debug)
+    {
+        console.log(this.user_id, arguments);
+    }
 };
 
 SwarmFightBot.prototype.run = function()
@@ -218,12 +260,14 @@ SwarmFightBot.prototype.run = function()
 SwarmFightBot.prototype.joinAnyField = function()
 {
     var that = this;
+    that.logDebug('join any field');
     that.client.post('join_any_fight.php', {
         'color': that.options.color
     }, function(raw_data)
     {
         var data = JSON.parse(raw_data);
         that.field_id = data.id;
+        that.logDebug('joined field:', that.field_id);
         that.field = new Field(that.field_id);
         that.is_logged_in = true;
     });
@@ -281,38 +325,17 @@ SwarmFightBot.prototype.getUserTargetPosition = function()
     };
 };
 
-SwarmFightBot.prototype.onTick = function(cb)
+SwarmFightBot.prototype.isTheBotDisabled = function()
+{
+    return (!this.is_logged_in || !this.field || this.field.areThereOnlyBots()) ? true : false;
+};
+
+SwarmFightBot.prototype.executeStrategy = function(cb)
 {
     var that = this;
     
-    if (!this.is_logged_in || !this.field)
-    {
-        return;
-    }
-    
-    if (this.field.areThereOnlyBots())
-    {
-        cb();
-        return ;
-    }
-    
-    try
-    {
-        var user_position = this.field.getUserPositionById(this.user_id);
-        var target_position = this.getUserTargetPosition();
-    }
-    catch (error)
-    {
-        /*
-         * Looks like we got kicked form the field, let's rejoin!
-         */
-        that.field_id = null;
-        that.field = null;
-        that.joinAnyField();
-        cb();
-        return ;
-    }
-    
+    var user_position = this.field.getUserPositionById(this.user_id);
+    var target_position = this.getUserTargetPosition();
     
     if (this.field.isPositionOccupied(target_position))
     {
