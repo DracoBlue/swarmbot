@@ -6,7 +6,7 @@ An experimental bot for swarmfight. It's running on the official server at <http
 
 If you want to launch two bots, you can do so with this command line:
 
-    $ node run_bots.js --api-keys 1df3731e054b4a4d4e2c84c6da4790fb,8512c964d9166285f9095d382e49b7c1 --color red
+    $ node run_bots.js --url http://swarmfight.com/ --api-keys 1df3731e054b4a4d4e2c84c6da4790fb,8512c964d9166285f9095d382e49b7c1 --color red
 
 This will launch the two bots. One with the api key `1df3731e054b4a4d4e2c84c6da4790fb` and another one with `8512c964d9166285f9095d382e49b7c1`.
 
