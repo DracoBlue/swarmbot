@@ -3,61 +3,57 @@
  * 
  * Copyright 2012 by DracoBlue. Licensed under the terms of MIT License.
  */
-SwarmFightBot = function(options)
+Field = function(id)
 {
-    this.client = options.client;
+    this.id = id;
     
-    options.number = parseInt(options.number, 10);
-    
-    var that = this;
-    this.options = options || {};
-
-    this.is_logged_in = false;
-    
-    this.user_id = null;
-    this.field_id = null;
     this.aim = null;
     this.participants = null;
-
-    setInterval(function()
-    {
-        that.updateFieldData(function()
-        {
-            that.onTick(function() {
-                
-            });
-        });
-    }, 1000);
+    this.winners = null;
 };
 
-SwarmFightBot.prototype.run = function()
+Field.prototype.refresh = function(client, cb)
 {
     var that = this;
 
-    this.client.post('login_with_api_key.php', {"api_key": this.options.api_key}, function(raw_data, res)
+    client.get('field_data.php?field_id=' + this.id, {}, function(raw_data)
     {
         var data = JSON.parse(raw_data);
         
-        that.user_id = data.user_id;
-        
-        that.joinAnyField();
-    });
+        that.aim = data.aim;
+        that.participants = data.participants;
+        that.winners = data.winners;
+
+        cb();
+    });    
 };
 
-SwarmFightBot.prototype.joinAnyField = function()
+Field.prototype.getWinners = function()
 {
-    var that = this;
-    that.client.post('join_any_fight.php', {
-        'color': that.options.color
-    }, function(raw_data)
+    if (!this.winners)
     {
-        var data = JSON.parse(raw_data);
-        that.field_id = data.id;
-        that.is_logged_in = true;
-    });
+        throw new Exception('Nobody won, yet!');
+    }
+    
+    return this.winners;
 };
 
-SwarmFightBot.prototype.getAimDimensions = function()
+Field.prototype.hasWinners = function()
+{
+    return this.winners ? true : false;
+};
+
+Field.prototype.getAim = function()
+{
+    if (!this.aim)
+    {
+        throw new Error('Cannot retrieve aim, if the aim-data has not been set, yet!');
+    }
+    
+    return this.aim;
+};
+
+Field.prototype.getAimDimensions = function()
 {
     if (!this.aim)
     {
@@ -90,7 +86,7 @@ SwarmFightBot.prototype.getAimDimensions = function()
     };
 };
 
-SwarmFightBot.prototype.isPositionOccupied = function(position)
+Field.prototype.isPositionOccupied = function(position)
 {
     if (!this.participants)
     {
@@ -118,7 +114,7 @@ SwarmFightBot.prototype.isPositionOccupied = function(position)
     return false;
 };
 
-SwarmFightBot.prototype.getUserPosition = function()
+Field.prototype.getUserPositionById = function(user_id)
 {
     var that = this;
     
@@ -131,7 +127,7 @@ SwarmFightBot.prototype.getUserPosition = function()
     
     for ( var i = 0; i < participants.length; i++)
     {
-        if (participants[i].user_id === that.user_id)
+        if (participants[i].user_id === user_id)
         {
             return {
                 'x': participants[i].x,
@@ -144,58 +140,7 @@ SwarmFightBot.prototype.getUserPosition = function()
     throw new Error('Cannot find user on field!');
 };
 
-SwarmFightBot.prototype.getUserTargetPosition = function()
-{
-    if (!this.aim)
-    {
-        throw new Error('Cannot calculate the target position of the player, if we don\'t have any aim, yet');
-    }
-    
-    var user_position = this.getUserPosition();
-    
-    var left_padding = 1;
-    var top_padding = 1;
-    
-    
-    if (user_position.color == 'R')
-    {
-        var aim_dimension = this.getAimDimensions();
-        /*
-         * Downer right corner
-         */
-        left_padding = 16 - aim_dimension.left - aim_dimension.width - 1;
-        top_padding = 16 - aim_dimension.top - aim_dimension.height - 1;
-    }
-    
-    if (user_position.color == 'B')
-    {
-        /*
-         * Upper left corner
-         */
-        left_padding = 1;
-        top_padding = 1;
-    }
-    
-    var position_in_aim = this.options.number - 1;
-    
-    if (this.aim.length <= position_in_aim)
-    {
-        /*
-         * Aim is not big enough, so let's stay where we are
-         */
-        return {
-            "x": user_position.x,
-            "y": user_position.y
-        };
-    }
-    
-    return {
-        "x": this.aim[position_in_aim].x + left_padding,
-        "y": this.aim[position_in_aim].y + top_padding
-    };
-};
-
-SwarmFightBot.prototype.areWeOnlyBots = function()
+Field.prototype.areThereOnlyBots = function()
 {
     if (!this.participants)
     {
@@ -215,19 +160,139 @@ SwarmFightBot.prototype.areWeOnlyBots = function()
     return true;
 };
 
+SwarmFightBot = function(options)
+{
+    this.client = options.client;
+    
+    options.number = parseInt(options.number, 10);
+    
+    var that = this;
+    this.options = options || {};
+
+    this.is_logged_in = false;
+    
+    this.user_id = null;
+    this.field_id = null;
+    this.field = null;
+
+    setInterval(function()
+    {
+        if (that.field) {
+            var field = that.field;
+            
+            field.refresh(that.client, function()
+            {
+                if (field.hasWinners())
+                {
+                    that.field_id = null;
+                    that.field = null;
+                    
+                    setTimeout(function() {
+                        that.joinAnyField();
+                    }, 3000 + Math.floor(Math.random() * 5000));
+                }
+                else
+                {
+                    that.onTick(function()
+                    {
+                
+                    });
+                }
+            });
+        }
+    }, 1000);
+};
+
+SwarmFightBot.prototype.run = function()
+{
+    var that = this;
+
+    this.client.post('login_with_api_key.php', {"api_key": this.options.api_key}, function(raw_data, res)
+    {
+        var data = JSON.parse(raw_data);
+        
+        that.user_id = data.user_id;
+        
+        that.joinAnyField();
+    });
+};
+
+SwarmFightBot.prototype.joinAnyField = function()
+{
+    var that = this;
+    that.client.post('join_any_fight.php', {
+        'color': that.options.color
+    }, function(raw_data)
+    {
+        var data = JSON.parse(raw_data);
+        that.field_id = data.id;
+        that.field = new Field(that.field_id);
+        that.is_logged_in = true;
+    });
+};
+
+SwarmFightBot.prototype.getUserTargetPosition = function()
+{
+    if (!this.field)
+    {
+        throw new Error('Cannot calculate the target position of the player, if we don\'t have any field, yet');
+    }
+    
+    var user_position = this.field.getUserPositionById(this.user_id);
+    var aim = this.field.getAim();
+    
+    var left_padding = 1;
+    var top_padding = 1;
+    
+    
+    if (user_position.color == 'R')
+    {
+        var aim_dimension = this.field.getAimDimensions();
+        /*
+         * Downer right corner
+         */
+        left_padding = 16 - aim_dimension.left - aim_dimension.width - 1;
+        top_padding = 16 - aim_dimension.top - aim_dimension.height - 1;
+    }
+    
+    if (user_position.color == 'B')
+    {
+        /*
+         * Upper left corner
+         */
+        left_padding = 1;
+        top_padding = 1;
+    }
+    
+    var position_in_aim = this.options.number - 1;
+    
+    if (aim.length <= position_in_aim)
+    {
+        /*
+         * Aim is not big enough, so let's stay where we are
+         */
+        return {
+            "x": user_position.x,
+            "y": user_position.y
+        };
+    }
+    
+    return {
+        "x": aim[position_in_aim].x + left_padding,
+        "y": aim[position_in_aim].y + top_padding
+    };
+};
+
 SwarmFightBot.prototype.onTick = function(cb)
 {
     var that = this;
     
-    if (!this.is_logged_in || !this.aim || !this.participants)
+    if (!this.is_logged_in || !this.field)
     {
         return;
     }
     
-    var participants = this.participants;
-    var aim = this.aim;
-    
-    if (this.areWeOnlyBots())
+    if (this.field.areThereOnlyBots())
     {
         cb();
         return ;
@@ -235,24 +300,24 @@ SwarmFightBot.prototype.onTick = function(cb)
     
     try
     {
-        var user_position = this.getUserPosition();
+        var user_position = this.field.getUserPositionById(this.user_id);
         var target_position = this.getUserTargetPosition();
     }
     catch (error)
     {
+        console.log(error);
         /*
          * Looks like we got kicked form the field, let's rejoin!
          */
         that.field_id = null;
-        that.aim = null;
-        that.participants = null;
+        that.field = null;
         that.joinAnyField();
         cb();
         return ;
     }
     
     
-    if (this.isPositionOccupied(target_position))
+    if (this.field.isPositionOccupied(target_position))
     {
         cb();
         return ;
@@ -278,38 +343,6 @@ SwarmFightBot.prototype.onTick = function(cb)
 
     that.client.post('move_player.php', params, function()
     {
-        cb();
-    });
-};
-
-SwarmFightBot.prototype.updateFieldData = function(cb)
-{
-    var that = this;
-    if (!this.field_id)
-    {
-        cb();
-        return;
-    }
-
-    this.client.get('field_data.php?field_id=' + this.field_id, {}, function(raw_data)
-    {
-        var data = JSON.parse(raw_data);
-
-        if (data.winners)
-        {
-            that.field_id = null;
-            that.aim = null;
-            that.participants = null;
-            setTimeout(function() {
-                that.joinAnyField();
-            }, 3000 + Math.floor(Math.random() * 5000));
-        }
-        else
-        {
-            that.aim = data.aim;
-            that.participants = data.participants;
-        }
-
         cb();
     });
 };

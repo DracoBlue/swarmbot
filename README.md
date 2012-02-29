@@ -5,6 +5,7 @@ An experimental bot for swarmfight. It's running on the official server at <http
 # Changelog
 
 - 2012/02/29
+  - refactored the SwarmFightBot into SwarmFightBot and Field
   - split up into run_bots.js, SwarmFightBot.js and HttpClient.js
   - new HttpClient-class, to have a replaceable server communication class
 - 2012/02/28
