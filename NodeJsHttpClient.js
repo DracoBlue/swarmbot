@@ -1,6 +1,4 @@
 /**
- * Usage swarmfight-bot.js --url http://servername/path/to/swarmfight/ --api-keys 1h2g3j2h13g --color red
- * 
  * Copyright 2012 by DracoBlue. Licensed under the terms of MIT License.
  */
 
@@ -9,20 +7,12 @@ HttpClient = function(options)
     this.options = options;
     this.options.base_url = this.options.base_url || null;
     this.cookies = null;
-    
-    this.initializeNodeJsRequests();
-};
-
-HttpClient.prototype.initializeNodeJsRequests = function()
-{
     this.http_module = require('http');
     this.querystring_module = require('querystring');
     this.url_module = require('url');
-    
-    this.rawRequest = this.rawNodeJsRequest;
 };
 
-HttpClient.prototype.rawNodeJsRequest = function(method, url, params, cb)
+HttpClient.prototype.rawRequest = function(method, url, params, cb)
 {
     var that = this;
     var raw_body = this.querystring_module.stringify(params);

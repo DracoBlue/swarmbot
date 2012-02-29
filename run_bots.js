@@ -40,7 +40,7 @@ var parseCommandLineOptions = function() {
 var commandline_options = parseCommandLineOptions();
 
 var api_keys = commandline_options['api-keys'].split(',');
-var HttpClient = require("./HttpClient").HttpClient;
+var HttpClient = require("./NodeJsHttpClient").HttpClient;
 var SwarmFightBot = require("./SwarmFightBot").SwarmFightBot;
 
 api_keys.forEach(function(api_key, i)
