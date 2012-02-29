@@ -89,7 +89,6 @@ SwarmFightBot = function(options)
     var that = this;
     this.options = options || {};
 
-    this.cookies = null;
     this.is_logged_in = false;
     
     this.user_id = null;
