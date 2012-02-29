@@ -30,7 +30,7 @@ Field.prototype.getWinners = function()
 {
     if (!this.winners)
     {
-        throw new Exception('Nobody won, yet!');
+        throw new Error('Nobody won, yet!');
     }
     
     return this.winners;
@@ -180,6 +180,16 @@ Field.prototype.areThereOnlyBots = function()
     return true;
 };
 
+Field.prototype.getParticipants = function()
+{
+    if (!this.participants)
+    {
+        throw new Error('Cannot return participants, if we don\'t have any participants data, yet');
+    }
+    
+    return this.participants;
+};
+
 SwarmFightBot = function(options)
 {
     var that = this;
@@ -283,53 +293,39 @@ SwarmFightBot.prototype.isTheBotDisabled = function()
  * Here is where your custom code (should) happen(s).
  */
 
-
 SwarmFightBot.prototype.executeStrategy = function(cb)
 {
     var that = this;
+    var field = this.field;
     
-    var user_position = this.field.getUserPositionById(this.user_id);
-    var target_position = this.getUserTargetPosition();
-    
-    if (this.field.isPositionOccupied(target_position))
+    if (!this.hasTargetPosition() || field.isPositionOccupied(this.getTargetPosition()))
     {
-        cb();
-        return ;
+        this.calculateNewTargetPosition();
     }
     
-    var params = {};
-    
-    if (user_position.x != target_position.x)
-    {
-        params['x'] = target_position.x < user_position.x ? -1 : 1;
-        params['y'] = 0;
-    }
-    else if (user_position.y != target_position.y)
-    {
-        params['x'] = 0;
-        params['y'] = target_position.y < user_position.y ? -1 : 1;
-    }
-    else
-    {
-        cb();
-        return ;
-    }
-
-    that.client.post('move_player.php', params, function()
-    {
-        cb();
-    });
+    this.moveOnStepToTargetPosition(cb);
 };
 
-SwarmFightBot.prototype.getUserTargetPosition = function()
+SwarmFightBot.prototype.hasTargetPosition = function()
 {
-    if (!this.field)
+    return this.target_position ? true : false;
+};
+
+SwarmFightBot.prototype.getTargetPosition = function()
+{
+    if (!this.target_position)
     {
-        throw new Error('Cannot calculate the target position of the player, if we don\'t have any field, yet');
+        throw new Error('This bot has no target position, yet!');
     }
+    return this.target_position;
+};
+
+SwarmFightBot.prototype.calculateNewTargetPosition = function()
+{
+    var field = this.field;
     
-    var user_position = this.field.getUserPositionById(this.user_id);
-    var aim = this.field.getAim();
+    var user_position = field.getUserPositionById(this.user_id);
+    var aim = field.getAim();
     
     var left_padding = 1;
     var top_padding = 1;
@@ -361,16 +357,47 @@ SwarmFightBot.prototype.getUserTargetPosition = function()
         /*
          * Aim is not big enough, so let's stay where we are
          */
-        return {
+        this.target_position = {
             "x": user_position.x,
             "y": user_position.y
         };
     }
+    else
+    {
+        this.target_position = {
+            "x": aim[position_in_aim].x + left_padding,
+            "y": aim[position_in_aim].y + top_padding
+        };
+    }
+};
+
+SwarmFightBot.prototype.moveOnStepToTargetPosition = function(cb)
+{
+    var user_position = this.field.getUserPositionById(this.user_id);
+    var target_position = this.getTargetPosition();
     
-    return {
-        "x": aim[position_in_aim].x + left_padding,
-        "y": aim[position_in_aim].y + top_padding
-    };
+    var params = {};
+    
+    if (user_position.x != target_position.x)
+    {
+        params['x'] = target_position.x < user_position.x ? -1 : 1;
+        params['y'] = 0;
+    }
+    else if (user_position.y != target_position.y)
+    {
+        params['x'] = 0;
+        params['y'] = target_position.y < user_position.y ? -1 : 1;
+    }
+    else
+    {
+        cb();
+        return ;
+    }
+
+    this.client.post('move_player.php', params, function()
+    {
+        cb();
+    });
 };
 
 exports.SwarmFightBot = SwarmFightBot;

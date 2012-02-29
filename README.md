@@ -26,6 +26,7 @@ For testing, you may use one of those api-keys (the bots are named after citys):
 # Changelog
 
 - 2012/02/29
+  - refactored strategy into several functions
   - added debugging and renamed onTick into executeStrategy
   - executeStrategy will be only called, if the bot is not disabled and the bot is still on the field
   - refactored the SwarmFightBot into SwarmFightBot and Field
