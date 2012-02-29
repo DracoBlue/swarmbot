@@ -273,6 +273,54 @@ SwarmFightBot.prototype.joinAnyField = function()
     });
 };
 
+SwarmFightBot.prototype.isTheBotDisabled = function()
+{
+    return (!this.is_logged_in || !this.field || this.field.areThereOnlyBots()) ? true : false;
+};
+
+
+/*
+ * Here is where your custom code (should) happen(s).
+ */
+
+
+SwarmFightBot.prototype.executeStrategy = function(cb)
+{
+    var that = this;
+    
+    var user_position = this.field.getUserPositionById(this.user_id);
+    var target_position = this.getUserTargetPosition();
+    
+    if (this.field.isPositionOccupied(target_position))
+    {
+        cb();
+        return ;
+    }
+    
+    var params = {};
+    
+    if (user_position.x != target_position.x)
+    {
+        params['x'] = target_position.x < user_position.x ? -1 : 1;
+        params['y'] = 0;
+    }
+    else if (user_position.y != target_position.y)
+    {
+        params['x'] = 0;
+        params['y'] = target_position.y < user_position.y ? -1 : 1;
+    }
+    else
+    {
+        cb();
+        return ;
+    }
+
+    that.client.post('move_player.php', params, function()
+    {
+        cb();
+    });
+};
+
 SwarmFightBot.prototype.getUserTargetPosition = function()
 {
     if (!this.field)
@@ -323,48 +371,6 @@ SwarmFightBot.prototype.getUserTargetPosition = function()
         "x": aim[position_in_aim].x + left_padding,
         "y": aim[position_in_aim].y + top_padding
     };
-};
-
-SwarmFightBot.prototype.isTheBotDisabled = function()
-{
-    return (!this.is_logged_in || !this.field || this.field.areThereOnlyBots()) ? true : false;
-};
-
-SwarmFightBot.prototype.executeStrategy = function(cb)
-{
-    var that = this;
-    
-    var user_position = this.field.getUserPositionById(this.user_id);
-    var target_position = this.getUserTargetPosition();
-    
-    if (this.field.isPositionOccupied(target_position))
-    {
-        cb();
-        return ;
-    }
-    
-    var params = {};
-    
-    if (user_position.x != target_position.x)
-    {
-        params['x'] = target_position.x < user_position.x ? -1 : 1;
-        params['y'] = 0;
-    }
-    else if (user_position.y != target_position.y)
-    {
-        params['x'] = 0;
-        params['y'] = target_position.y < user_position.y ? -1 : 1;
-    }
-    else
-    {
-        cb();
-        return ;
-    }
-
-    that.client.post('move_player.php', params, function()
-    {
-        cb();
-    });
 };
 
 exports.SwarmFightBot = SwarmFightBot;
