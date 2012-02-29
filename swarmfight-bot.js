@@ -1,5 +1,5 @@
 /**
- * Usage swarmfight-bot.js --url http://servername/path/to/swarmfight/ --user_id 1h2g3j2h13g --color red --number 2
+ * Usage swarmfight-bot.js --url http://servername/path/to/swarmfight/ --api-keys 1h2g3j2h13g --color red
  * 
  * Copyright 2012 by DracoBlue. Licensed under the terms of MIT License.
  */
