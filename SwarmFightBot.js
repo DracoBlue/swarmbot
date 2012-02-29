@@ -3,86 +3,9 @@
  * 
  * Copyright 2012 by DracoBlue. Licensed under the terms of MIT License.
  */
-HttpClient = function(options)
-{
-    this.options = options;
-    this.options.base_url = this.options.base_url || null;
-    this.cookies = null;
-    
-    this.initializeNodeJsRequests();
-};
-
-HttpClient.prototype.initializeNodeJsRequests = function()
-{
-    this.http_module = require('http');
-    this.querystring_module = require('querystring');
-    this.url_module = require('url');
-    
-    this.rawRequest = this.rawNodeJsRequest;
-};
-
-HttpClient.prototype.rawNodeJsRequest = function(method, url, params, cb)
-{
-    var that = this;
-    var raw_body = this.querystring_module.stringify(params);
-
-    var url_parts = this.url_module.parse((this.options.base_url || '') + url);
-    
-    var options = {
-        "host": url_parts.host,
-        "port": parseInt(url_parts.port || (url_parts.protocol === 'https' ? 443 : 80), 10),
-        "path": url_parts.path,
-        "headers": {
-            'Content-Length': raw_body.length,
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        "method": method
-    };
-
-    if (this.cookies)
-    {
-        options.headers['Cookie'] = that.cookies;
-    }
-
-    var req = this.http_module.request(options, function(res)
-    {
-        res.setEncoding('utf8');
-        var response = [];
-        res.on('data', function(chunk)
-        {
-            response.push(chunk);
-        });
-
-        res.on('end', function()
-        {
-            var headers = res.headers;
-            if (headers['set-cookie'])
-            {
-                that.cookies = headers['set-cookie'].join('').split(';')[0];
-            }
-            
-            cb(response.join(''));
-        });
-    });
-    req.write(raw_body);
-    req.end();    
-};
-
-HttpClient.prototype.get = function(url, params, cb)
-{
-    this.rawRequest('GET', url, params, cb);
-};
-
-HttpClient.prototype.post = function(url, params, cb)
-{
-    this.rawRequest('POST', url, params, cb);
-};
-
 SwarmFightBot = function(options)
 {
-    this.client = new HttpClient({
-        "base_url": options.url
-    });
+    this.client = options.client;
     
     options.number = parseInt(options.number, 10);
     
@@ -391,52 +314,4 @@ SwarmFightBot.prototype.updateFieldData = function(cb)
     });
 };
 
-var parseCommandLineOptions = function() {
-    var filenames = [];
-    var options = {};
-    var next_is_option = false;
-    var next_option_key = null;
-    var everything_is_file = false;
-
-    for (var i = 2; i < process.argv.length; i++) {
-        var parameter = process.argv[i];
-        if (!everything_is_file) {
-            if (next_is_option) {
-                options[next_option_key] = parameter;
-                next_is_option = false;
-            } else {
-                if (parameter === '--') {
-                    everything_is_file = true;
-                } else {
-                    if (parameter.substr(0, 2) === '--') {
-                        next_is_option = true;
-                        next_option_key = parameter.substr(2);
-                    } else {
-                        filenames.push(parameter);
-                    }
-                }
-            }
-        } else {
-            filenames.push(parameter);
-        }
-    }
-
-    return options;
-};
-
-var commandline_options = parseCommandLineOptions();
-
-var api_keys = commandline_options['api-keys'].split(',');
-
-api_keys.forEach(function(api_key, i)
-{
-    setTimeout(function() {
-        new SwarmFightBot({
-            "url": commandline_options.url,
-            "color": commandline_options.color,
-            "number": i + 1,
-            "api_key": api_key
-        }).run();
-    }, i * 100);
-});
-
+exports.SwarmFightBot = SwarmFightBot;
