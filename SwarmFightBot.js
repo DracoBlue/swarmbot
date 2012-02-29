@@ -305,7 +305,6 @@ SwarmFightBot.prototype.onTick = function(cb)
     }
     catch (error)
     {
-        console.log(error);
         /*
          * Looks like we got kicked form the field, let's rejoin!
          */
