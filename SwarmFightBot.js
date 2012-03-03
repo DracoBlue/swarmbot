@@ -634,4 +634,7 @@ SwarmFightBot.prototype.getPathToTargetPosition = function(user_position, target
     return [];
 };
 
-exports.SwarmFightBot = SwarmFightBot;
+if (typeof exports !== 'undefined')
+{
+    exports.SwarmFightBot = SwarmFightBot;
+}
