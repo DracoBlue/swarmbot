@@ -46,12 +46,6 @@ HttpClient.prototype.rawRequest = function(method, url, params, cb)
 
         res.on('end', function()
         {
-            var headers = res.headers;
-            if (headers['set-cookie'])
-            {
-                that.cookies = headers['set-cookie'].join('').split(';')[0];
-            }
-            
             cb(response.join(''));
         });
     });
