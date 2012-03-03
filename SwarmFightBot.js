@@ -298,7 +298,7 @@ SwarmFightBot.prototype.executeStrategy = function(cb)
     var that = this;
     var field = this.field;
     
-    if (!this.hasTargetPosition() || field.isPositionOccupied(this.getTargetPosition()))
+    if (true || !this.hasTargetPosition() || field.isPositionOccupied(this.getTargetPosition()))
     {
         this.calculateNewTargetPosition();
     }
@@ -325,50 +325,161 @@ SwarmFightBot.prototype.calculateNewTargetPosition = function()
     var field = this.field;
     
     var user_position = field.getUserPositionById(this.user_id);
-    var aim = field.getAim();
     
-    var left_padding = 1;
-    var top_padding = 1;
+    var field_map = {};
+    var team_mates = [];
     
-    
-    if (user_position.color == 'R')
+    var participants = field.getParticipants();
+    for (var i = 0; i < participants.length; i++)
     {
-        var aim_dimension = this.field.getAimDimensions();
+        var participant = participants[i];
+        if (participant.color === user_position.color && participant.user_id != this.user_id)
+        {
+            /*
+             * It's a player, from the same team
+             */
+            team_mates.push(participant);
+        }
+        
+        if (participant.color !== 'G')
+        {
+            /*
+             * It's no pickup!
+             */
+            field_map[participant.x + 'x' + participant.y] = participant.color;
+        }
+    }
+    
+    this.target_position = this.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndFieldMap(user_position, team_mates, field_map);
+};
+
+SwarmFightBot.prototype.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndFieldMap = function(user_position, team_mates, field_map)
+{
+    var aim = this.field.getAim();
+    var team_mates_length = team_mates.length;
+    
+    var max_aim_value = 0;
+    var max_aim_value_team_mate_id = null;
+    var max_aim_value_position = null;
+    
+    for (var i = 0; i < team_mates_length; i++)
+    {
+        var team_mate_x = team_mates[i].x;
+        var team_mate_y = team_mates[i].y;
+        
         /*
-         * Downer right corner
+         * Ok, we have "Paul" now ... let's try him at all possible aim positions
          */
-        left_padding = 16 - aim_dimension.left - aim_dimension.width - 1;
-        top_padding = 16 - aim_dimension.top - aim_dimension.height - 1;
+        for (var a = 0; a < aim.length; a++)
+        {
+            /*
+             * What if "Paul" is at aim position number #a?
+             */
+            var selected_x = aim[a].x;
+            var selected_y = aim[a].y;
+            
+            var aim_value = 0;
+            
+            /*
+             * Let's find out, if every other field #s (except #a) is free and within the field.
+             */
+            for (var s = 0; s < aim.length; s++)
+            {
+                if (s !== a)
+                {
+                    var relative_x = team_mate_x - selected_x + aim[s].x;
+                    var relative_y = team_mate_y - selected_y + aim[s].y;
+                    
+                    if (relative_x > 0 && relative_y > 0 && relative_x < 17 && relative_y < 17)
+                    {
+                        if (!field_map[relative_x + 'x' + relative_y] || field_map[relative_x + 'x' + relative_y].color === 'G')
+                        {
+                            /*
+                             * Empty or just a power up
+                             */
+                            aim_value++;
+                        }
+                        else if (field_map[relative_x + 'x' + relative_y] === user_position.color)
+                        {
+                            /*
+                             * Same color
+                             */
+                            aim_value += 100;
+                        }
+                    }
+                    else
+                    {
+                        /*
+                         * It's not even in the bounderies, BIG no!!
+                         */
+                        aim_value = -100000;
+                    }
+                }
+            }
+            
+            if (aim_value > max_aim_value)
+            {
+                max_aim_value_team_mate_id = i;
+                max_aim_value_position = a;
+                max_aim_value = aim_value;
+            }
+        }
+        
     }
     
-    if (user_position.color == 'B')
+    
+    var selected_team_mate_position_x = aim[max_aim_value_position].x;
+    var selected_team_mate_position_y = aim[max_aim_value_position].y;
+    var team_mate_x = team_mates[max_aim_value_team_mate_id].x;
+    var team_mate_y = team_mates[max_aim_value_team_mate_id].y;
+//    this.logDebug('max aim for team mate: ', max_aim_value_team_mate_id, 'at', max_aim_value_position, 'with value', max_aim_value);
+//    this.logDebug('our team mate is currently at ', team_mate_x + 'x' + team_mate_y, 'and is', team_mates[max_aim_value_team_mate_id]);
+    
+    var nearest_field = null;
+    var nearest_field_distance = 10000;
+    
+    var are_we_part_of_this_aim = false;
+    
+    for (var s = 0; s < aim.length; s++)
     {
-        /*
-         * Upper left corner
-         */
-        left_padding = 1;
-        top_padding = 1;
+        if (s !== max_aim_value_position)
+        {
+            var relative_x = team_mate_x - selected_team_mate_position_x + aim[s].x;
+            var relative_y = team_mate_y - selected_team_mate_position_y + aim[s].y;
+            
+            /*
+             * Awesome, we are already part of this aim! So let's stay there!
+             */
+            if (relative_x === user_position.x && relative_y === user_position.y)
+            {
+                return {
+                    "x": relative_x,
+                    "y": relative_y
+                };
+            }
+            
+            if (!field_map[relative_x + 'x' + relative_y] || field_map[relative_x + 'x' + relative_y].color === 'G')
+            {
+                /*
+                 * Empty or just a power up .. let's calculate the distance ... 
+                 */
+                var distance = Math.sqrt((user_position.x + relative_x) * (user_position.x + relative_x) + (user_position.y + relative_y) * (user_position.y + relative_y));
+//                this.logDebug('field', relative_x, relative_y, 'with distance', distance);
+                if (distance < nearest_field_distance)
+                {
+                    /*
+                     * It's a cheaper one: take it!
+                     */
+                    nearest_field_distance = distance;
+                    nearest_field = {"x": relative_x, "y": relative_y};
+                }
+            }
+        }
     }
     
-    var position_in_aim = this.options.number - 1;
+//    this.logDebug('nearest_field', nearest_field, 'with distance', nearest_field_distance);
     
-    if (aim.length <= position_in_aim)
-    {
-        /*
-         * Aim is not big enough, so let's stay where we are
-         */
-        this.target_position = {
-            "x": user_position.x,
-            "y": user_position.y
-        };
-    }
-    else
-    {
-        this.target_position = {
-            "x": aim[position_in_aim].x + left_padding,
-            "y": aim[position_in_aim].y + top_padding
-        };
-    }
+    return nearest_field;
 };
 
 SwarmFightBot.prototype.moveOnStepToTargetPosition = function(cb)
@@ -378,12 +489,12 @@ SwarmFightBot.prototype.moveOnStepToTargetPosition = function(cb)
     
     var params = {};
     
-    if (user_position.x != target_position.x)
+    if (Math.random() > 0.5 && user_position.x != target_position.x)
     {
         params['x'] = target_position.x < user_position.x ? -1 : 1;
         params['y'] = 0;
     }
-    else if (user_position.y != target_position.y)
+    else if (Math.random() > 0.5 && user_position.y != target_position.y)
     {
         params['x'] = 0;
         params['y'] = target_position.y < user_position.y ? -1 : 1;
@@ -393,6 +504,12 @@ SwarmFightBot.prototype.moveOnStepToTargetPosition = function(cb)
         cb();
         return ;
     }
+    
+    if (this.field.isPositionOccupied({'x': params['x'] + user_position.x, 'y': params['y'] + user_position.y}))
+    {
+        this.logDebug('occupied!', {'x': params['x'] + user_position.x, 'y': params['y'] + user_position.y});
+    }
+
 
     this.client.post('move_player.php', params, function()
     {
