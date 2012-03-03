@@ -202,6 +202,7 @@ SwarmFightBot = function(options)
     this.is_logged_in = false;
     
     this.user_id = null;
+    this.user_color = null;
     this.field_id = null;
     this.field = null;
 
@@ -297,6 +298,14 @@ SwarmFightBot.prototype.executeStrategy = function(cb)
 {
     var that = this;
     var field = this.field;
+    
+    var user_position = field.getUserPositionById(this.user_id);
+    
+    if (this.user_color != user_position.color)
+    {
+        this.user_color = user_position.color;
+        this.calculateNewTargetPosition();
+    }
     
     if (!this.hasTargetPosition() || field.isPositionOccupied(this.getTargetPosition()))
     {

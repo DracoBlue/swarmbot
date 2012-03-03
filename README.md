@@ -25,6 +25,9 @@ For testing, you may use one of those api-keys (the bots are named after citys):
 
 # Changelog
 
+- 2012/03/03
+  - invalidate target position, if the color changed
+  - added pathfinding
 - 2012/02/29
   - refactored strategy into several functions
   - added debugging and renamed onTick into executeStrategy
