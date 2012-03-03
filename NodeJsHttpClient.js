@@ -35,8 +35,6 @@ HttpClient.prototype.rawRequest = function(method, url, params, cb)
         options.headers['Authorization'] = that.authorization;
     }
     
-    console.log('Request', options);
-
     var req = this.http_module.request(options, function(res)
     {
         res.setEncoding('utf8');
