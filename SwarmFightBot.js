@@ -269,9 +269,11 @@ SwarmFightBot.prototype.run = function()
     });
 };
 
-SwarmFightBot.prototype.joinAnyField = function()
+SwarmFightBot.prototype.joinAnyField = function(color)
 {
     var that = this;
+    this.options.color = color || this.options.color;
+    
     that.logDebug('join any field');
     that.client.post('join_any_fight.php', {
         'color': that.options.color

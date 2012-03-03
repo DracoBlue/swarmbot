@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Swarmfight</title>
+        <link rel="stylesheet" type="text/css" href="reset.css" media="all"/>
+        <link rel="stylesheet" type="text/css" href="all.css" media="all"/>
+        
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://raw.github.com/DracoBlue/js-behaviour/master/JsBehaviourToolkit.jquery.js"></script>
+
+        <script type="text/javascript" src="BrowserHttpClient.js"></script>
+        <script type="text/javascript" src="Grid.js"></script>
+        <script type="text/javascript" src="../SwarmFightBot.js"></script>
+
+    </head>
+    <body>
+        <div class="page_margins">
+            <label>Api Key
+                <input type="text" class="js_api_key" value="cb7432fd099d3760b3fd6a7d2249fb1d">
+            </label>
+
+            <label>User Id
+                <span class="js_user_id">...</span>
+            </label>
+
+            <label>Color
+                <span class="js_user_color">...</span>
+            </label>
+            
+            <label>Field Id
+                <span class="js_field_id">...</span>
+            </label>
+            
+            <label>
+                Join Any Field:
+                <select class="js_color">
+                    <option value="red" selected="selected">Red</option>
+                    <option value="blue">Blue</option>
+                </select>
+                <button class="js_join_any_field_button">Join</button>
+            </label>
+
+            
+            <label>
+                Debugging:
+                <select class="js_debug">
+                    <option value="0" selected="selected">Disabled</option>
+                    <option value="1">Enabled</option>
+                </select>
+            </label>
+            
+            <label class="grid_label">Grid:</label>
+            <div class="grid">
+                <ul class="participants"></ul>
+            </div>
+            
+            <script>
+                var options = {};
+                options.base_url = 'http://swarmfight.com/';
+                options.color = jQuery('.js_color').val();
+                options.debug = false;
+                options.api_key = jQuery('.js_api_key').val();
+                var bot = new SwarmFightBot({
+                    "client": new HttpClient({"base_url": options.base_url}),
+                    "color": options.color,
+                    "api_key": options.api_key,
+                    "debug": options.debug
+                });
+                
+                jQuery('.js_join_any_field_button').bind('click', function() {
+                    bot.joinAnyField(jQuery('.js_color').val());
+                });
+                
+                jQuery('.js_debug').bind('change', function() {
+                    bot.options.debug = jQuery(this).val() === '0' ? false : true;
+                });
+                
+                setInterval(function() {
+                    jQuery('.js_user_id').text(bot.user_id || '...');
+                    jQuery('.js_user_color').text(bot.user_color || '...');
+                    jQuery('.js_field_id').text(bot.field_id || '...');
+                }, 200);
+                
+                new Grid(jQuery('.grid'), {"bot": bot});                
+                
+                bot.run();
+            </script>
+        </div>
+    </body>
+</html>

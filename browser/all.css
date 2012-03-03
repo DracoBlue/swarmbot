@@ -1,0 +1,48 @@
+.grid {
+    position: absolute;
+    border: 5px solid #000;
+    border-radius: 5px;
+    width: 330px;
+    height: 330px;
+    left: 10px;
+}
+
+.participants {
+    position: relative;
+    top: 5px;
+    left: 5px;
+    border: 1px;
+    width: 320px;
+    height: 320px;
+}
+
+
+.participants .user,
+.participants .item {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #000;
+}
+
+.participants .B {
+    border: 2px solid #00F;
+}
+
+.participants .R {
+    border: 2px solid #F00;
+}
+
+.participants .user img,
+.participants .item img {
+    border: 0;
+    opacity: 0.5;
+    width: 16px;
+    height: 16px;
+}
+
+
+label {
+    display: block;
+    padding: 10px;
+}
