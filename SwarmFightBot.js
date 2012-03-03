@@ -277,7 +277,6 @@ SwarmFightBot.prototype.joinAnyField = function()
         'color': that.options.color
     }, function(raw_data)
     {
-        console.log(raw_data);
         var data = JSON.parse(raw_data);
         that.field_id = data.id;
         that.logDebug('joined field:', that.field_id);
