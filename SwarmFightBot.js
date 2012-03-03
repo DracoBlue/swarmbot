@@ -486,35 +486,118 @@ SwarmFightBot.prototype.moveOnStepToTargetPosition = function(cb)
 {
     var user_position = this.field.getUserPositionById(this.user_id);
     var target_position = this.getTargetPosition();
-    
-    var params = {};
-    
-    if (Math.random() > 0.5 && user_position.x != target_position.x)
-    {
-        params['x'] = target_position.x < user_position.x ? -1 : 1;
-        params['y'] = 0;
-    }
-    else if (Math.random() > 0.5 && user_position.y != target_position.y)
-    {
-        params['x'] = 0;
-        params['y'] = target_position.y < user_position.y ? -1 : 1;
-    }
-    else
+
+    var path_to_target_position = this.getPathToTargetPosition(user_position, target_position);
+
+    if (path_to_target_position.length < 1)
     {
         cb();
         return ;
     }
-    
+
+    var next_position = path_to_target_position[0];
+
+    var params = {};
+    params['x'] = next_position[0] - user_position.x;
+    params['y'] = next_position[1] - user_position.y;
+
     if (this.field.isPositionOccupied({'x': params['x'] + user_position.x, 'y': params['y'] + user_position.y}))
     {
         this.logDebug('occupied!', {'x': params['x'] + user_position.x, 'y': params['y'] + user_position.y});
     }
-
+    
+    this.logDebug('move', params);
 
     this.client.post('move_player.php', params, function()
     {
         cb();
     });
+};
+
+SwarmFightBot.prototype.getPathToTargetPosition = function(user_position, target_position)
+{
+    if (user_position.x === target_position.x && user_position.y === target_position.y)
+    {
+        return [];
+    }
+
+    var field = this.field;
+    var participants = field.getParticipants();
+    var used_fields = {};
+    for (var i = 0; i < participants.length; i++)
+    {
+        if (participants[i].color != 'G')
+        {
+            used_fields[participants[i].x + 'x' + participants[i].y] = true;
+        }
+    }
+
+    var paths = [[[user_position.x, user_position.y]]];
+
+    while (paths.length > 0)
+    {
+        var new_paths = [];
+
+        for (var i = 0; i < paths.length; i++)
+        {
+            var pos_x = paths[i][paths[i].length - 1][0];
+            var pos_y = paths[i][paths[i].length - 1][1];
+            var new_pos_x = pos_x;
+            var new_pos_y = pos_y;
+
+            if (pos_x === target_position.x && pos_y === target_position.y && used_fields[pos_x + 'x' + pos_y] === true)
+            {
+                this.logDebug('from', user_position, 'to', target_position, 'by', paths[i].slice(1, paths[i].length));
+                return paths[i].slice(1, paths[i].length);
+            }
+
+            var path = paths[i];
+
+            new_pos_x = pos_x;
+            new_pos_y = pos_y + 1;
+            if (new_pos_y < 17 && !used_fields[new_pos_x + 'x' + new_pos_y])
+            {
+                used_fields[new_pos_x + 'x' + new_pos_y] = true;
+                var new_path = path.slice(0, path.length);
+                new_path.push([new_pos_x, new_pos_y]);
+                new_paths.push(new_path);
+            }
+
+            new_pos_y = pos_y;
+            new_pos_x = pos_x + 1;
+            if (new_pos_x < 17 && !used_fields[new_pos_x + 'x' + new_pos_y])
+            {
+                used_fields[new_pos_x + 'x' + new_pos_y] = true;
+                var new_path = path.slice(0, path.length);
+                new_path.push([new_pos_x, new_pos_y]);
+                new_paths.push(new_path);
+            }
+
+            new_pos_y = pos_y;
+            new_pos_x = pos_x - 1;
+            if (new_pos_x > 0 && !used_fields[new_pos_x + 'x' + new_pos_y])
+            {
+                used_fields[new_pos_x + 'x' + new_pos_y] = true;
+                var new_path = path.slice(0, path.length);
+                new_path.push([new_pos_x, new_pos_y]);
+                new_paths.push(new_path);
+            }
+
+            new_pos_x = pos_x;
+            new_pos_y = pos_y - 1;
+            if (new_pos_y > 0 && !used_fields[new_pos_x + 'x' + new_pos_y])
+            {
+                used_fields[new_pos_x + 'x' + new_pos_y] = true;
+                var new_path = path.slice(0, path.length);
+                new_path.push([new_pos_x, new_pos_y]);
+                new_paths.push(new_path);
+            }
+        }
+
+        paths = new_paths;
+    }
+
+    return [];
 };
 
 exports.SwarmFightBot = SwarmFightBot;
