@@ -55,6 +55,26 @@
                 <ul class="participants"></ul>
             </div>
             
+            <button class="apply_button js_apply_button">Apply Changes!</button>
+            
+            <div class="code_areas">
+                <label>Strategy: function(cb)</label>
+                <textarea class="js_strategy">
+                    
+                </textarea>
+
+                <label>Calculate New Target Position: function(user_position, team_mates, field_map)</label>
+                <textarea class="js_calculate_new_target_position">
+                    
+                </textarea>
+
+                <label>Get Path to Target Position: function(user_position, target_position)</label>
+                <textarea class="js_calculate_path_to_target_position">
+                    
+                </textarea>
+
+            </div>
+            
             <script>
                 var options = {};
                 options.base_url = 'http://swarmfight.com/';
@@ -68,8 +88,49 @@
                     "debug": options.debug
                 });
                 
+                var generateStringFromFunction = function(function_object) {
+                    var function_string = function_object.toString().match(/\{([\s\S]*)\}$/m)[1] || '';
+                    function_string = function_string.replace(/^    /gm, "");
+                    function_string = function_string.replace(/^\t/gm, "");
+                    return function_string.trim();
+                }
+                
+                jQuery('.js_strategy').val(generateStringFromFunction(bot.executeStrategy));
+                jQuery('.js_calculate_new_target_position').val(generateStringFromFunction(bot.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndFieldMap));
+                jQuery('.js_calculate_path_to_target_position').val(generateStringFromFunction(bot.getPathToTargetPosition));
+                
                 jQuery('.js_join_any_field_button').bind('click', function() {
                     bot.joinAnyField(jQuery('.js_color').val());
+                });
+                
+                jQuery('.js_apply_button').bind('click', function() {
+                    try
+                    {
+                        bot.executeStrategy = new Function("cb", jQuery('.js_strategy').val());
+                    }
+                    catch (error)
+                    {
+                        alert(error.message);                                            
+                    }
+                    
+                    try
+                    {
+                        bot.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndFieldMap = new Function("user_position", "team_mates", "field_map", jQuery('.js_calculate_new_target_position').val());
+                    }
+                    catch (error)
+                    {
+                        alert(error.message);                                            
+                    }
+                    
+                    try
+                    {
+                        bot.getPathToTargetPosition = new Function("user_position", "target_position", jQuery('.js_calculate_path_to_target_position').val());
+                    }
+                    catch (error)
+                    {
+                        alert(error.message);                                            
+                    }
+                    
                 });
                 
                 jQuery('.js_debug').bind('change', function() {
