@@ -298,7 +298,7 @@ SwarmFightBot.prototype.executeStrategy = function(cb)
     var that = this;
     var field = this.field;
     
-    if (true || !this.hasTargetPosition() || field.isPositionOccupied(this.getTargetPosition()))
+    if (!this.hasTargetPosition() || field.isPositionOccupied(this.getTargetPosition()))
     {
         this.calculateNewTargetPosition();
     }
@@ -405,6 +405,13 @@ SwarmFightBot.prototype.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndF
                              * Same color
                              */
                             aim_value += 100;
+                        }
+                        else
+                        {
+                            /*
+                             * Different color, BIG no!!
+                             */
+                            aim_value = -100000;
                         }
                     }
                     else
@@ -537,6 +544,8 @@ SwarmFightBot.prototype.getPathToTargetPosition = function(user_position, target
     while (paths.length > 0)
     {
         var new_paths = [];
+        var new_path = null;
+        var path = null;
 
         for (var i = 0; i < paths.length; i++)
         {
@@ -551,14 +560,14 @@ SwarmFightBot.prototype.getPathToTargetPosition = function(user_position, target
                 return paths[i].slice(1, paths[i].length);
             }
 
-            var path = paths[i];
+            path = paths[i];
 
             new_pos_x = pos_x;
             new_pos_y = pos_y + 1;
             if (new_pos_y < 17 && !used_fields[new_pos_x + 'x' + new_pos_y])
             {
                 used_fields[new_pos_x + 'x' + new_pos_y] = true;
-                var new_path = path.slice(0, path.length);
+                new_path = path.slice(0, path.length);
                 new_path.push([new_pos_x, new_pos_y]);
                 new_paths.push(new_path);
             }
@@ -568,7 +577,7 @@ SwarmFightBot.prototype.getPathToTargetPosition = function(user_position, target
             if (new_pos_x < 17 && !used_fields[new_pos_x + 'x' + new_pos_y])
             {
                 used_fields[new_pos_x + 'x' + new_pos_y] = true;
-                var new_path = path.slice(0, path.length);
+                new_path = path.slice(0, path.length);
                 new_path.push([new_pos_x, new_pos_y]);
                 new_paths.push(new_path);
             }
@@ -578,7 +587,7 @@ SwarmFightBot.prototype.getPathToTargetPosition = function(user_position, target
             if (new_pos_x > 0 && !used_fields[new_pos_x + 'x' + new_pos_y])
             {
                 used_fields[new_pos_x + 'x' + new_pos_y] = true;
-                var new_path = path.slice(0, path.length);
+                new_path = path.slice(0, path.length);
                 new_path.push([new_pos_x, new_pos_y]);
                 new_paths.push(new_path);
             }
@@ -588,7 +597,7 @@ SwarmFightBot.prototype.getPathToTargetPosition = function(user_position, target
             if (new_pos_y > 0 && !used_fields[new_pos_x + 'x' + new_pos_y])
             {
                 used_fields[new_pos_x + 'x' + new_pos_y] = true;
-                var new_path = path.slice(0, path.length);
+                new_path = path.slice(0, path.length);
                 new_path.push([new_pos_x, new_pos_y]);
                 new_paths.push(new_path);
             }
