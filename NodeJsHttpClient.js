@@ -6,7 +6,7 @@ HttpClient = function(options)
 {
     this.options = options;
     this.options.base_url = this.options.base_url || null;
-    this.cookies = null;
+    this.authorization = null;
     this.http_module = require('http');
     this.querystring_module = require('querystring');
     this.url_module = require('url');
@@ -30,10 +30,12 @@ HttpClient.prototype.rawRequest = function(method, url, params, cb)
         "method": method
     };
 
-    if (this.cookies)
+    if (this.authorization)
     {
-        options.headers['Cookie'] = that.cookies;
+        options.headers['Authorization'] = that.authorization;
     }
+    
+    console.log('Request', options);
 
     var req = this.http_module.request(options, function(res)
     {
@@ -67,6 +69,11 @@ HttpClient.prototype.get = function(url, params, cb)
 HttpClient.prototype.post = function(url, params, cb)
 {
     this.rawRequest('POST', url, params, cb);
+};
+
+HttpClient.prototype.setAuthorization = function(authorization)
+{
+    this.authorization = authorization;
 };
 
 exports.HttpClient = HttpClient;

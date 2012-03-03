@@ -261,6 +261,7 @@ SwarmFightBot.prototype.run = function()
     this.client.post('login_with_api_key.php', {"api_key": this.options.api_key}, function(raw_data, res)
     {
         var data = JSON.parse(raw_data);
+        that.client.setAuthorization('Bearer ' + data.access_token);
         
         that.user_id = data.user_id;
         
@@ -276,6 +277,7 @@ SwarmFightBot.prototype.joinAnyField = function()
         'color': that.options.color
     }, function(raw_data)
     {
+        console.log(raw_data);
         var data = JSON.parse(raw_data);
         that.field_id = data.id;
         that.logDebug('joined field:', that.field_id);
