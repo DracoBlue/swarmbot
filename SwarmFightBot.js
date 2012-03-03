@@ -443,6 +443,21 @@ SwarmFightBot.prototype.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndF
         
     }
     
+    if (max_aim_value_position === null)
+    {
+        /*
+         * Ok, ... we have a problem. All friends are blocked in such way, that they cannot
+         * create an aim from their position. This means, we need to find ANY place on the map, which is free.
+         * This can be anything.
+         * 
+         * To make it simpler ... we just use random :-).
+         */
+        return {
+            "x": Math.random(1, 16),
+            "y": Math.random(1, 16)
+        };
+    }
+    
     
     var selected_team_mate_position_x = aim[max_aim_value_position].x;
     var selected_team_mate_position_y = aim[max_aim_value_position].y;
