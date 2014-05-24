@@ -1,0 +1,71 @@
+.grid {
+    position: absolute;
+    border: 5px solid #000;
+    border-radius: 5px;
+    width: 330px;
+    height: 330px;
+    left: 10px;
+}
+
+.participants {
+    position: relative;
+    top: 5px;
+    left: 5px;
+    border: 1px;
+    width: 320px;
+    height: 320px;
+}
+
+
+.participants .user,
+.participants .item {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #000;
+}
+
+.participants .B {
+    border: 2px solid #00F;
+}
+
+.participants .R {
+    border: 2px solid #F00;
+}
+
+.participants .user img,
+.participants .item img {
+    border: 0;
+    opacity: 0.5;
+    width: 16px;
+    height: 16px;
+}
+
+
+label {
+    display: block;
+    padding: 10px;
+}
+
+.code_areas {
+    position: absolute;
+    left: 400px;
+    right: 20px;
+    top: 60px;
+}
+
+.code_areas textarea {
+    width: 100%;
+    height: 400px;
+    font-size: 1.5em;
+    font-family: monospace;
+    white-space: pre;
+}
+
+.apply_button {
+    position: fixed;
+    z-index: 2;
+    right: 20px;
+    bottom: 20px;
+    font-size: 1.5em;
+}

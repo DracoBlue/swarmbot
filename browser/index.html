@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Swarmfight</title>
+        <link rel="stylesheet" type="text/css" href="reset.css" media="all"/>
+        <link rel="stylesheet" type="text/css" href="all.css" media="all"/>
+        
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://raw.github.com/DracoBlue/js-behaviour/master/JsBehaviourToolkit.jquery.js"></script>
+
+        <script type="text/javascript" src="BrowserHttpClient.js"></script>
+        <script type="text/javascript" src="Grid.js"></script>
+        <script type="text/javascript" src="../SwarmFightBot.js"></script>
+
+    </head>
+    <body>
+        <div class="page_margins">
+            <label>Api Key
+                <input type="text" class="js_api_key" value="cb7432fd099d3760b3fd6a7d2249fb1d">
+            </label>
+
+            <label>User Id
+                <span class="js_user_id">...</span>
+            </label>
+
+            <label>Color
+                <span class="js_user_color">...</span>
+            </label>
+            
+            <label>Field Id
+                <span class="js_field_id">...</span>
+            </label>
+            
+            <label>
+                Join Any Field:
+                <select class="js_color">
+                    <option value="red" selected="selected">Red</option>
+                    <option value="blue">Blue</option>
+                </select>
+                <button class="js_join_any_field_button">Join</button>
+            </label>
+
+            
+            <label>
+                Debugging:
+                <select class="js_debug">
+                    <option value="0" selected="selected">Disabled</option>
+                    <option value="1">Enabled</option>
+                </select>
+            </label>
+            
+            <label class="grid_label">Grid:</label>
+            <div class="grid">
+                <ul class="participants"></ul>
+            </div>
+            
+            <button class="apply_button js_apply_button">Apply Changes!</button>
+            
+            <div class="code_areas">
+                <label>Strategy: function(cb)</label>
+                <textarea class="js_strategy">
+                    
+                </textarea>
+
+                <label>Calculate New Target Position: function(user_position, team_mates, field_map)</label>
+                <textarea class="js_calculate_new_target_position">
+                    
+                </textarea>
+
+                <label>Get Path to Target Position: function(user_position, target_position)</label>
+                <textarea class="js_calculate_path_to_target_position">
+                    
+                </textarea>
+
+            </div>
+            
+            <script>
+                var options = {};
+                options.base_url = 'http://swarmfight.com/';
+                options.color = jQuery('.js_color').val();
+                options.debug = false;
+                options.api_key = jQuery('.js_api_key').val();
+                var bot = new SwarmFightBot({
+                    "client": new HttpClient({"base_url": options.base_url}),
+                    "color": options.color,
+                    "api_key": options.api_key,
+                    "debug": options.debug
+                });
+                
+                var generateStringFromFunction = function(function_object) {
+                    var function_string = function_object.toString().match(/\{([\s\S]*)\}$/m)[1] || '';
+                    function_string = function_string.replace(/^    /gm, "");
+                    function_string = function_string.replace(/^\t/gm, "");
+                    return function_string.trim();
+                }
+                
+                jQuery('.js_strategy').val(generateStringFromFunction(bot.executeStrategy));
+                jQuery('.js_calculate_new_target_position').val(generateStringFromFunction(bot.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndFieldMap));
+                jQuery('.js_calculate_path_to_target_position').val(generateStringFromFunction(bot.getPathToTargetPosition));
+                
+                jQuery('.js_join_any_field_button').bind('click', function() {
+                    bot.joinAnyField(jQuery('.js_color').val());
+                });
+                
+                jQuery('.js_apply_button').bind('click', function() {
+                    try
+                    {
+                        bot.executeStrategy = new Function("cb", jQuery('.js_strategy').val());
+                    }
+                    catch (error)
+                    {
+                        alert(error.message);                                            
+                    }
+                    
+                    try
+                    {
+                        bot.getOneFreeBestAimPositionForUserPositionAndTeamMatesAndFieldMap = new Function("user_position", "team_mates", "field_map", jQuery('.js_calculate_new_target_position').val());
+                    }
+                    catch (error)
+                    {
+                        alert(error.message);                                            
+                    }
+                    
+                    try
+                    {
+                        bot.getPathToTargetPosition = new Function("user_position", "target_position", jQuery('.js_calculate_path_to_target_position').val());
+                    }
+                    catch (error)
+                    {
+                        alert(error.message);                                            
+                    }
+                    
+                });
+                
+                jQuery('.js_debug').bind('change', function() {
+                    bot.options.debug = jQuery(this).val() === '0' ? false : true;
+                });
+                
+                setInterval(function() {
+                    jQuery('.js_user_id').text(bot.user_id || '...');
+                    jQuery('.js_user_color').text(bot.user_color || '...');
+                    jQuery('.js_field_id').text(bot.field_id || '...');
+                }, 200);
+                
+                new Grid(jQuery('.grid'), {"bot": bot});                
+                
+                bot.run();
+            </script>
+        </div>
+    </body>
+</html>

@@ -26,7 +26,11 @@ For testing, you may use one of those api-keys (the bots are named after citys):
 # Changelog
 
 - 2012/03/03
+  - added browser-based bot runner
   - added authentication with access_token
+  - handle the case, when no friend can be part of the aim. Result is: random target!
+  - invalidate target position, if the color changed
+  - added pathfinding
 - 2012/02/29
   - refactored strategy into several functions
   - added debugging and renamed onTick into executeStrategy
